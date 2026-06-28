@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FurniFlow - Job Card App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="index.css">
+</head>
+<body>
+<div id="app-container"></div>
+<nav id="bottom-nav" class="hidden">
+  <a href="#" class="nav-item" data-target="dashboard"><span class="icon">HOME</span><span>Dashboard</span></a>
+  <a href="#" class="nav-item" data-target="myTasks"><span class="icon">TASKS</span><span>My Tasks</span></a>
+  <a href="#" class="nav-item hidden" id="nav-materials" data-target="materials"><span class="icon">STOCK</span><span>Materials</span></a>
+  <a href="#" class="nav-item" data-target="profile"><span class="icon">USER</span><span>Profile</span></a>
+</nav>
+
+<template id="tpl-login">
+<div class="screen login-screen flex-center flex-col">
+  <img src="https://img.icons8.com/fluency/96/000000/sofa.png" alt="Logo" class="logo">
+  <h1 class="app-title">FurniFlow</h1>
+  <p class="app-subtitle">Furniture Job Card Management</p>
+  <form id="login-form" class="form-container">
+    <input type="text" id="username" placeholder="Username" required autocomplete="off">
+    <input type="password" id="password" placeholder="Password" required>
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">Login</button>
+  </form>
+</div>
+</template>
+
+<template id="tpl-dashboard">
+<div class="screen">
+  <header class="top-bar">
+    <h2 id="db-title">FurniFlow</h2>
+    <div class="top-bar-right">
+      <button id="btn-new-job" class="btn btn-sm btn-indigo hidden">+ New Job</button>
+      <button class="btn btn-icon" data-action="logout">Logout</button>
+    </div>
+  </header>
+  <div class="tabs">
+    <button class="tab active" data-tab="db-overview">Overview</button>
+    <button class="tab" data-tab="db-timeline">Timeline View</button>
+    <button class="tab hidden" id="tab-btn-costs" data-tab="db-costs">Project Costs</button>
+    <button class="tab hidden" id="tab-btn-users" data-tab="db-users">User Management</button>
+  </div>
+  <div class="scrollable">
+    <div id="tab-db-overview" class="tab-pane active">
+      <div style="padding:8px 0 6px;position:sticky;top:0;background:var(--bg-main);z-index:5">
+        <input type="text" id="db-search" placeholder="🔍 Search by project name or PO..." style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.85rem;outline:none;">
+      </div>
+      <div id="dashboard-content"></div>
+    </div>
+    <div id="tab-db-timeline" class="tab-pane">
+      <div id="dashboard-timeline"></div>
+    </div>
+    <div id="tab-db-costs" class="tab-pane">
+      <div id="dashboard-costs"></div>
+    </div>
+    <div id="tab-db-users" class="tab-pane">
+      <div id="dashboard-users" style="padding-top:10px;"></div>
+    </div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-newJob">
+<div class="screen">
+  <header class="top-bar">
+    <button class="btn btn-back" data-action="back">&larr; Back</button>
+    <h2 id="nj-title">New Job Card</h2>
+    <div style="width:60px"></div>
+  </header>
+  <div class="scrollable">
+    <form id="form-new-job">
+      <div class="card">
+        <h4>Project Information</h4>
+        <div class="form-group"><label>Project Name *</label><input type="text" id="nj-project" required placeholder="Enter project name"></div>
+        <div class="form-group"><label>Client / Architect Name</label><input type="text" id="nj-client" placeholder="e.g. John Doe / ABC Designs"></div>
+        <div class="form-group"><label>PO Number *</label><input type="text" id="nj-po" required placeholder="e.g. PO-2024-001"></div>
+        <div class="form-row">
+          <div class="form-group"><label>PO Date</label><input type="date" id="nj-po-date"></div>
+          <div class="form-group"><label>Job Card Date</label><input type="date" id="nj-jc-date"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Dispatch Date</label><input type="date" id="nj-dispatch-date"></div>
+          <div class="form-group"><label>Art No</label><input type="text" id="nj-art" placeholder="ART-001"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex-between mb-2">
+          <h4 style="margin:0">Line Items</h4>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-sm btn-indigo" id="btn-add-item">+ Furniture Item</button>
+            <button type="button" class="btn btn-sm btn-teal" id="btn-add-sofa">+ Sofa/Wood Item</button>
+          </div>
+        </div>
+        <div id="temp-items-list"><div class="empty-state">No items yet. Add furniture or sofa/wood items.</div></div>
+      </div>
+      <button type="submit" id="btn-submit-job" class="btn btn-success btn-block mb-3">Create Job Card</button>
+    </form>
+  </div>
+</div>
+</template>
+
+<template id="tpl-itemEdit">
+<div class="screen">
+  <header class="top-bar">
+    <button class="btn btn-back" data-action="back">&larr;</button>
+    <h2>Item Details</h2>
+    <button class="btn btn-text" id="btn-save-item">Save</button>
+  </header>
+  <div class="scrollable">
+    <input type="hidden" id="ie-type">
+    <div class="form-group"><label>DR No</label><input type="text" id="ie-dr" placeholder="Drawing reference"></div>
+    <div class="form-group"><label>Item Name *</label><input type="text" id="ie-name" required placeholder="e.g. Wardrobe, TV Unit, Sofa Set"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Width (cm)</label><input type="number" id="ie-w"></div>
+      <div class="form-group"><label>Height (cm)</label><input type="number" id="ie-h"></div>
+      <div class="form-group"><label>Depth (cm)</label><input type="number" id="ie-d"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Quantity</label><input type="number" id="ie-qty" value="1" min="1"></div>
+      <div class="form-group"><label>Core Material</label><input type="text" id="ie-core" placeholder="MDF 18mm"></div>
+    </div>
+    <div id="ie-sofa-fields" class="hidden">
+      <div class="card" style="margin-top:8px"><h4>Sofa / Solid Wood Fields</h4>
+        <div class="form-row">
+          <div class="form-group"><label>Fabric 1</label><input type="text" id="ie-sofa-fab1"></div>
+          <div class="form-group"><label>Fabric 2</label><input type="text" id="ie-sofa-fab2"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Foam Premium</label><input type="text" id="ie-sofa-foam-prem"></div>
+          <div class="form-group"><label>Foam Regular</label><input type="text" id="ie-sofa-foam-reg"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Wood Finish</label><input type="text" id="ie-sofa-wood-fin"></div>
+          <div class="form-group"><label>Leg</label><input type="text" id="ie-sofa-leg"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>PU / Polish</label><input type="text" id="ie-sofa-polish"></div>
+          <div class="form-group"><label>Hardware</label><input type="text" id="ie-sofa-hardware"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Metal</label><input type="text" id="ie-sofa-metal"></div>
+          <div class="form-group"><label>Additional Finish</label><input type="text" id="ie-sofa-add-finish"></div>
+        </div>
+      </div>
+    </div>
+    <div id="ie-furniture-fields" class="hidden">
+      <div class="card" style="margin-top:8px"><h4>Furniture / Panel Fields</h4>
+        <div class="form-row">
+          <div class="form-group"><label>Outer Laminate</label><input type="text" id="ie-outer"></div>
+          <div class="form-group"><label>Shutter Laminate</label><input type="text" id="ie-shutter-lam"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Inner Laminate</label><input type="text" id="ie-inner"></div>
+          <div class="form-group"><label>Expose Panel</label><input type="text" id="ie-expose"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Shutter Handle</label><input type="text" id="ie-shutter-handle"></div>
+          <div class="form-group"><label>Profile Shutter Handle</label><input type="text" id="ie-profile-handle"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Drawer Handle</label><input type="text" id="ie-drawer-handle"></div>
+          <div class="form-group"><label>Lock (Drawer & Shutter)</label><input type="text" id="ie-lock"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Light</label><input type="text" id="ie-light"></div>
+          <div class="form-group"><label>Glass</label><input type="text" id="ie-glass"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Legs</label><input type="text" id="ie-legs"></div>
+          <div class="form-group"><label>Channel</label><input type="text" id="ie-channel"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Hardware</label><input type="text" id="ie-hardware"></div>
+          <div class="form-group"><label>Additional Hardware 1</label><input type="text" id="ie-add-hw"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Metal</label><input type="text" id="ie-metal"></div>
+          <div class="form-group"><label>Polish</label><input type="text" id="ie-panel-polish"></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group"><label>Remark</label><textarea id="ie-remark" rows="3"></textarea></div>
+    <div id="ie-delete-container" class="hidden" style="margin-top:16px;margin-bottom:24px;">
+      <button type="button" class="btn btn-red btn-block" id="btn-delete-item">🗑 Delete Item</button>
+    </div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-jobDetail">
+<div class="screen">
+  <header class="top-bar">
+    <button class="btn btn-back" data-action="back">&larr;</button>
+    <h2 id="jd-title">Job Card</h2>
+    <div style="width:24px"></div>
+  </header>
+  <div class="tabs">
+    <button class="tab active" data-tab="details">Details</button>
+    <button class="tab" data-tab="drawings">Drawings</button>
+    <button class="tab" data-tab="bom">BOM</button>
+    <button class="tab" data-tab="production">Production</button>
+    <button class="tab" data-tab="tickets">Tickets</button>
+  </div>
+  <div class="scrollable">
+    <div id="tab-details" class="tab-pane active">
+      <div class="card">
+        <span style="font-size:.75rem;color:var(--text-secondary)">Current Stage</span>
+        <div style="margin:6px 0"><span id="jd-stage-badge" class="badge">--</span></div>
+        <div class="progress-bar-container"><div id="jd-progress" class="progress-bar"></div></div>
+      </div>
+      <div class="card">
+        <h4>Job Details</h4>
+        <div class="kv-list">
+          <div class="kv"><span class="k">Project</span><span class="v" id="jd-proj"></span></div>
+          <div class="kv"><span class="k">Client</span><span class="v" id="jd-client"></span></div>
+          <div class="kv"><span class="k">PO No</span><span class="v" id="jd-po"></span></div>
+          <div class="kv"><span class="k">PO Date</span><span class="v" id="jd-po-date"></span></div>
+          <div class="kv"><span class="k">JC Date</span><span class="v" id="jd-jc-date"></span></div>
+          <div class="kv"><span class="k">Dispatch</span><span class="v" id="jd-disp-date"></span></div>
+          <div class="kv"><span class="k">Art No</span><span class="v" id="jd-art"></span></div>
+          <div class="kv"><span class="k">Panel Track</span><span class="v" id="jd-panel-dept">--</span></div>
+          <div class="kv"><span class="k">Sofa/SW Track</span><span class="v" id="jd-sofa-dept">--</span></div>
+          <div class="kv hidden" id="jd-cost-row"><span class="k">Material Cost</span><span class="v" id="jd-cost" style="color:var(--green);font-weight:bold">₹ 0</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Status History (Timeline Log)</h4>
+        <div id="jd-history-log" class="timeline" style="margin-top:10px"></div>
+      </div>
+      <div class="card"><h4>Line Items</h4><div id="jd-items-list"></div></div>
+      <div class="card" id="jd-actions-card"><h4>Actions</h4><div id="jd-action-buttons"></div></div>
+    </div>
+    <div id="tab-drawings" class="tab-pane">
+      <div class="card" id="jd-add-drawing-card">
+        <h4>Upload Drawing</h4>
+        <div class="form-group"><input type="text" id="drw-name" placeholder="Drawing Name"></div>
+        <div class="form-group"><input type="text" id="drw-url" placeholder="URL / Reference"></div>
+        <button class="btn btn-indigo btn-block" id="btn-upload-drw">+ Upload Drawing</button>
+      </div>
+      <div id="jd-drawings-list"></div>
+    </div>
+    <div id="tab-bom" class="tab-pane">
+      <div class="card" id="jd-add-bom-card">
+        <h4>Add BOM Item</h4>
+        <div class="form-group">
+          <select id="bom-category">
+            <option value="CORE MATERIAL">CORE MATERIAL</option>
+            <option value="SURFACE">SURFACE</option>
+            <option value="EDGEBAND">EDGEBAND</option>
+            <option value="HARDWARE & OTHER MATERIAL">HARDWARE & OTHER MATERIAL</option>
+            <option value="POLISH">POLISH</option>
+            <option value="OTHER">OTHER (Type Custom Category Below)</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="bom-custom-category-group">
+          <input type="text" id="bom-custom-category" placeholder="Enter Custom Material Category">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input type="text" id="bom-brand" placeholder="Brand Name (e.g. EBCO, Merino)"></div>
+          <div class="form-group" style="flex:2"><input type="text" id="bom-mat" placeholder="Material / Specs / Thickness"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input type="number" id="bom-qty" placeholder="Qty"></div>
+          <div class="form-group">
+            <select id="bom-unit"><option>nos</option><option>sqft</option><option>sheet</option><option>rft</option><option>mtr</option><option>kg</option><option>ltr</option><option>set</option></select>
+          </div>
+          <div class="form-group" style="flex:2"><input type="text" id="bom-remark" placeholder="Remarks"></div>
+        </div>
+        <button class="btn btn-indigo btn-block" id="btn-add-bom">+ Add to BOM</button>
+      </div>
+      <button class="btn btn-amber btn-block mb-2 hidden" id="btn-send-bom">Send BOM to Purchase Head</button>
+      <div id="bom-sent-badge" class="badge hidden mb-2" style="background:var(--amber);color:#000;font-size:.8rem;padding:8px 12px;display:none">BOM Sent to Purchase</div>
+      <div id="jd-bom-list"></div>
+    </div>
+    <div id="tab-production" class="tab-pane">
+      <div class="card"><h4>Panel Production Pipeline</h4><ul class="timeline" id="jd-panel-timeline"></ul></div>
+      <div class="card"><h4>Sofa / Solid Wood Pipeline</h4><ul class="timeline" id="jd-sofa-timeline"></ul></div>
+      <div class="card"><h4>QC Status</h4><div id="jd-qc-status"><p style="color:var(--text-muted);font-size:.85rem">QC not initiated yet.</p></div></div>
+    </div>
+    <div id="tab-tickets" class="tab-pane">
+      <div class="card">
+        <h4>Raise Change Request</h4>
+        <div class="form-group"><textarea id="tkt-note" placeholder="Describe the change needed..." rows="3"></textarea></div>
+        <button class="btn btn-indigo btn-block" id="btn-raise-tkt">Raise Ticket</button>
+      </div>
+      <div id="jd-tickets-list"></div>
+    </div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-myTasks">
+<div class="screen">
+  <header class="top-bar"><h2>My Tasks</h2><button class="btn btn-icon" data-action="logout">Logout</button></header>
+  <div class="scrollable">
+    <h3 id="tasks-title" style="margin-bottom:12px;font-size:1rem;color:var(--text-secondary)"></h3>
+    <div id="my-tasks-list"></div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-materials">
+<div class="screen">
+  <header class="top-bar"><h2>Materials / Store</h2><button class="btn btn-icon" data-action="logout">Logout</button></header>
+  <div class="tabs" style="align-items:center;padding-right:8px;overflow-x:auto;scrollbar-width:none;">
+    <div style="display:flex;flex:1;gap:4px">
+      <button class="tab active" data-tab="mat-live" style="white-space:nowrap">Live Stock</button>
+      <button class="tab" data-tab="mat-jobs" style="white-space:nowrap">Job BOMs</button>
+      <button class="tab" data-tab="mat-grn" style="white-space:nowrap">GRN</button>
+      <button class="tab" data-tab="mat-issue" style="white-space:nowrap">Issue</button>
+    </div>
+    <button class="btn btn-sm btn-indigo" id="btn-add-stock" style="margin-left:6px">+ Stock</button>
+  </div>
+  <div class="scrollable">
+    <div id="tab-mat-live" class="tab-pane active"><div id="mat-list-live"></div></div>
+    <div id="tab-mat-jobs" class="tab-pane"><div id="mat-list-jobs"></div></div>
+    <div id="tab-mat-grn" class="tab-pane"><div id="mat-list-grn"></div></div>
+    <div id="tab-mat-issue" class="tab-pane"><div id="mat-list-issue"></div></div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-jobBomDetail">
+<div class="screen">
+  <header class="top-bar">
+    <button class="btn btn-back" data-action="back">&larr; Back</button>
+    <h2 id="jbd-title">Job BOM Details</h2>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <button class="btn btn-icon" id="jbd-btn-pdf" title="Download PDF">🖨 PDF</button>
+      <button class="btn btn-icon" id="jbd-btn-excel" title="Download Excel">📥 Excel</button>
+    </div>
+  </header>
+  <div class="scrollable">
+    <div id="jbd-content" style="padding-top:10px;"></div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-profile">
+<div class="screen">
+  <header class="top-bar"><h2>My Profile</h2><button class="btn btn-sm btn-red" data-action="logout">Logout</button></header>
+  <div class="scrollable">
+    <div class="card" style="text-align:center;padding:24px">
+      <div class="profile-avatar" id="pf-avatar">?</div>
+      <div class="profile-name" id="pf-name">--</div>
+      <div class="profile-role" id="pf-role">--</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-value text-indigo" id="pf-total">0</div><div class="stat-label">Total Jobs</div></div>
+      <div class="stat-card"><div class="stat-value text-amber" id="pf-active">0</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-value text-green" id="pf-done">0</div><div class="stat-label">Dispatched</div></div>
+    </div>
+    <div class="card">
+      <h4>Account Info</h4>
+      <div class="kv-list">
+        <div class="kv"><span class="k">Username</span><span class="v" id="pf-username">--</span></div>
+        <div class="kv"><span class="k">Role</span><span class="v" id="pf-role2">--</span></div>
+        <div class="kv"><span class="k">Login Time</span><span class="v" id="pf-since">--</span></div>
+      </div>
+    </div>
+    <button class="btn btn-red btn-block" data-action="logout">Logout</button>
+  </div>
+</div>
+</template>
+
+<div id="toast-container"></div>
+<div id="modal-container"></div>
+<script src="app.js"></script>
+</body>
+</html>
