@@ -29,7 +29,7 @@ const DEPT_ROLES=["SW Carpentry","Upholstery"];
 const IN_PROD_STAGES=["Handover to Production","Material Approval","Materials Approved","Pressing","BIM Saw","Edge Banding","CNC","Cleaning","Fitting","SW Carpentry","Upholstery","Polish","Packing","QC Requested","QC Passed","Rework"];
 const ROLE_INFO={"Project Coordinator":{abbr:"PC",cls:"role-pc"},"Design Head":{abbr:"DH",cls:"role-dh"},"Production Head":{abbr:"PH",cls:"role-ph"},"Purchase Head":{abbr:"PUR",cls:"role-pur"},"Store":{abbr:"ST",cls:"role-store"},"Admin":{abbr:"ADM",cls:"role-admin"}};
 const getRoleInfo=r=>ROLE_INFO[r]||{abbr:r.substring(0,3).toUpperCase(),cls:"role-dept"};
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_VHu0sh0MAvhC7rlqPudQ6TfkCf9a6dGWDdVtJ9_lKMSYoUBGxx6X17Ajo-sLXOfi/exec"; // Paste Apps Script Web App URL here
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2iFFQqe3CuaaXyi4bz_yMvFjC21XJe15_haCPdaJ_5ppPfJzGmkewFCqkEGGVIYE/exec"; // Paste Apps Script Web App URL here
 const DB={
   getCards:()=>JSON.parse(localStorage.getItem('FF_Cards')||'[]'),
   setCards:(c)=>{localStorage.setItem('FF_Cards',JSON.stringify(c)); syncToGoogle("setCards", c);},
